@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>廣告轉換代碼產生器</title>
+<script src="https://cdn.jsdelivr.net/npm/docx@9.0.0/build/index.umd.js"></script>
+<style>
+:root{--bg:#f5f4f0;--surface:#fff;--border:#e2e0d8;--text:#1a1a1a;--text-muted:#888;--text-hint:#bbb;--accent:#1a1a1a;--accent-fg:#fff;--success:#2d8a4e;--danger:#c0392b;--chip-bg:#f0efe9;--chip-on-bg:#fff8d6;--chip-on-border:#c9a800;--chip-on-text:#7a6200;--tag-bg:#f0efe9;--tag-text:#666}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);padding:2rem 1rem 4rem}
+.container{max-width:960px;margin:0 auto}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.subtitle{font-size:13px;color:var(--text-muted);margin-top:4px}
+header{margin-bottom:2rem}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:18px;height:18px;fill:#fff}
+.section{margin-bottom:1.5rem}
+.section-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+input[type="text"]{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--text);outline:none;font-family:inherit}
+input[type="text"]:focus{border-color:var(--text)}
+input[type="text"]::placeholder{color:var(--text-hint)}
+.inline-input{width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);outline:none;font-family:inherit;margin-bottom:6px}
+.inline-input:focus{border-color:var(--text)}
+.inline-input::placeholder{color:var(--text-hint)}
+
+/* 平台卡片 */
+.plat-row{display:flex;gap:12px;margin-bottom:1.5rem}
+.plat-card{flex:1;background:var(--surface);border:2px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .15s}
+.plat-card.active{border-color:var(--accent)}
+.plat-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer}
+.plat-head:hover{background:#fafaf8}
+.plat-head input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.plat-name{font-size:15px;font-weight:600}
+.plat-desc{font-size:11px;color:var(--text-muted)}
+.plat-body{padding:0 16px 14px;display:none}
+.plat-card.active .plat-body{display:block}
+
+/* 兩欄 */
+.two-col{display:flex;gap:16px;align-items:flex-start}
+.col{flex:1;min-width:0}
+.col-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.col-badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;display:inline-block}
+.badge-meta{background:#e3f2fd;color:#1565c0}
+.badge-gads{background:#fff3e0;color:#e65100}
+
+/* 事件卡片 */
+.ev-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.ev-card.active{border-color:#aaa}
+.ev-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+.ev-head:hover{background:#fafaf8}
+.ev-head input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.ev-name{font-size:13px;font-weight:500;flex:1}
+.ev-tag{font-size:10px;color:var(--tag-text);background:var(--tag-bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:monospace}
+.ev-body{padding:10px 14px 12px;border-top:1px solid var(--border);display:none;flex-direction:column;gap:10px;background:#fafaf8}
+.ev-body.show{display:flex}
+.param-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;color:var(--text-muted);background:var(--chip-bg);border:1px solid var(--border);border-radius:16px;padding:3px 10px;cursor:pointer;user-select:none;transition:all .12s}
+.chip:hover{border-color:#aaa}
+.chip.on{background:var(--chip-on-bg);border-color:var(--chip-on-border);color:var(--chip-on-text);font-weight:500}
+.chip input{display:none}
+.trigger-row{display:flex;gap:6px}
+.trig{font-size:11px;color:var(--text-muted);background:var(--chip-bg);border:1px solid var(--border);border-radius:16px;padding:3px 10px;cursor:pointer;user-select:none}
+.trig.on{background:#e8f5e9;border-color:#43a047;color:#2e7d32;font-weight:500}
+.upload-area{margin-top:2px}
+.upload-area input[type=file]{font-size:12px;font-family:inherit;cursor:pointer;color:var(--text-muted)}
+.pv-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.pv-row img{width:44px;height:30px;object-fit:cover;border-radius:4px;border:1px solid var(--border);display:none}
+.pv-row .fn{font-size:10px;color:var(--success);display:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.pv-row .rm{font-size:10px;color:var(--danger);cursor:pointer;border:none;background:none;display:none;font-family:inherit}
+.divider{height:1px;background:var(--border);margin:1.5rem 0}
+.gen-btn{width:100%;height:48px;background:var(--accent);color:var(--accent-fg);border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.gen-btn:hover{opacity:.85}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed}
+.status{margin-top:10px;font-size:13px;text-align:center;min-height:20px;color:var(--text-muted)}
+.status.ok{color:var(--success)}
+.status.err{color:var(--danger)}
+footer{margin-top:2.5rem;text-align:center;font-size:12px;color:var(--text-hint)}
+@media(max-width:700px){.two-col{flex-direction:column}.plat-row{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="logo-row">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div>
+    <h1>廣告轉換代碼產生器</h1>
+  </div>
+  <p class="subtitle">選擇平台、填入 ID、選擇事件與參數，一鍵產出 Word 說明文件</p>
+</header>
+
+<!-- ===== 平台選擇 ===== -->
+<div class="section">
+  <div class="section-label">選擇平台與 ID</div>
+  <div class="plat-row">
+    <div class="plat-card active" id="pc-meta">
+      <div class="plat-head" onclick="togPlat('meta')">
+        <input type="checkbox" id="cb-plat-meta" checked onclick="event.stopPropagation();togPlat('meta',this.checked)">
+        <div><div class="plat-name">Meta Pixel</div><div class="plat-desc">Facebook / Instagram 廣告</div></div>
+      </div>
+      <div class="plat-body"><input type="text" id="pixelId" placeholder="請輸入 Pixel ID，例如：769468388991532"></div>
+    </div>
+    <div class="plat-card" id="pc-gads">
+      <div class="plat-head" onclick="togPlat('gads')">
+        <input type="checkbox" id="cb-plat-gads" onclick="event.stopPropagation();togPlat('gads',this.checked)">
+        <div><div class="plat-name">Google Ads</div><div class="plat-desc">關鍵字 / 多媒體廣告</div></div>
+      </div>
+      <div class="plat-body"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap">AW-</span><input type="text" id="convId" placeholder="請輸入數字，例如：16722366790"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 事件兩欄 ===== -->
+<div class="section">
+  <div class="section-label">追蹤事件</div>
+  <div class="two-col">
+
+    <!-- 左欄: Meta -->
+    <div class="col" id="col-meta">
+      <div class="col-header"><span class="col-badge badge-meta">Meta Pixel</span></div>
+      <div class="ev-card active" id="m-card-pageview">
+        <div class="ev-head" onclick="togEv('m','pageview')">
+          <input type="checkbox" id="m-cb-pageview" checked onclick="event.stopPropagation();togEvCb('m','pageview',this.checked)">
+          <span class="ev-name">全站再行銷</span><span class="ev-tag">PageView</span>
+        </div>
+      </div>
+      <div class="ev-card" id="m-card-viewcontent">
+        <div class="ev-head" onclick="togEv('m','viewcontent')">
+          <input type="checkbox" id="m-cb-viewcontent" onclick="event.stopPropagation();togEvCb('m','viewcontent',this.checked)">
+          <span class="ev-name">查看商品</span><span class="ev-tag">ViewContent</span>
+        </div>
+        <div class="ev-body" id="m-body-viewcontent">
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_ids">content_ids</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_type">content_type</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'m-viewcontent')"></div>
+            <div class="pv-row"><img id="pi-m-viewcontent"><span class="fn" id="fn-m-viewcontent"></span><button class="rm" id="rm-m-viewcontent" onclick="rmFile('m-viewcontent')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="m-card-addtocart">
+        <div class="ev-head" onclick="togEv('m','addtocart')">
+          <input type="checkbox" id="m-cb-addtocart" onclick="event.stopPropagation();togEvCb('m','addtocart',this.checked)">
+          <span class="ev-name">加入購物車</span><span class="ev-tag">AddToCart</span>
+        </div>
+        <div class="ev-body" id="m-body-addtocart">
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_ids">content_ids</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_type">content_type</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'m-addtocart')"></div>
+            <div class="pv-row"><img id="pi-m-addtocart"><span class="fn" id="fn-m-addtocart"></span><button class="rm" id="rm-m-addtocart" onclick="rmFile('m-addtocart')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="m-card-checkout">
+        <div class="ev-head" onclick="togEv('m','checkout')">
+          <input type="checkbox" id="m-cb-checkout" onclick="event.stopPropagation();togEvCb('m','checkout',this.checked)">
+          <span class="ev-name">開始結帳</span><span class="ev-tag">InitiateCheckout</span>
+        </div>
+        <div class="ev-body" id="m-body-checkout">
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_ids">content_ids</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_type">content_type</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'m-checkout')"></div>
+            <div class="pv-row"><img id="pi-m-checkout"><span class="fn" id="fn-m-checkout"></span><button class="rm" id="rm-m-checkout" onclick="rmFile('m-checkout')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="m-card-purchase">
+        <div class="ev-head" onclick="togEv('m','purchase')">
+          <input type="checkbox" id="m-cb-purchase" onclick="event.stopPropagation();togEvCb('m','purchase',this.checked)">
+          <span class="ev-name">購買完成</span><span class="ev-tag">Purchase</span>
+        </div>
+        <div class="ev-body" id="m-body-purchase">
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_ids">content_ids</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_type">content_type</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'m-purchase')"></div>
+            <div class="pv-row"><img id="pi-m-purchase"><span class="fn" id="fn-m-purchase"></span><button class="rm" id="rm-m-purchase" onclick="rmFile('m-purchase')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="m-card-lead">
+        <div class="ev-head" onclick="togEv('m','lead')">
+          <input type="checkbox" id="m-cb-lead" onclick="event.stopPropagation();togEvCb('m','lead',this.checked)">
+          <span class="ev-name">提交表單</span><span class="ev-tag">Lead</span>
+        </div>
+        <div class="ev-body" id="m-body-lead">
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_ids">content_ids</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="content_type">content_type</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'m-lead')"></div>
+            <div class="pv-row"><img id="pi-m-lead"><span class="fn" id="fn-m-lead"></span><button class="rm" id="rm-m-lead" onclick="rmFile('m-lead')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右欄: Google Ads -->
+    <div class="col" id="col-gads" style="display:none">
+      <div class="col-header"><span class="col-badge badge-gads">Google Ads</span></div>
+      <div class="ev-card active" id="g-card-pageview">
+        <div class="ev-head" onclick="togEv('g','pageview')">
+          <input type="checkbox" id="g-cb-pageview" checked onclick="event.stopPropagation();togEvCb('g','pageview',this.checked)">
+          <span class="ev-name">全站再行銷</span><span class="ev-tag">Global Site Tag</span>
+        </div>
+      </div>
+      <div class="ev-card" id="g-card-viewcontent">
+        <div class="ev-head" onclick="togEv('g','viewcontent')">
+          <input type="checkbox" id="g-cb-viewcontent" onclick="event.stopPropagation();togEvCb('g','viewcontent',this.checked)">
+          <span class="ev-name">查看商品</span><span class="ev-tag">Conversion</span>
+        </div>
+        <div class="ev-body" id="g-body-viewcontent">
+          <div><div class="param-label">Conversion Label</div>
+            <input class="inline-input gl-input" type="text" placeholder="例如：AbCdEfGhIjKlMn">
+          </div>
+          <div><div class="param-label">觸發方式</div>
+            <div class="trigger-row"><span class="trig on" data-t="page" onclick="setTrig(this)">頁面載入</span><span class="trig" data-t="btn" onclick="setTrig(this)">按鈕點擊</span></div>
+          </div>
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="transaction_id">transaction_id</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'g-viewcontent')"></div>
+            <div class="pv-row"><img id="pi-g-viewcontent"><span class="fn" id="fn-g-viewcontent"></span><button class="rm" id="rm-g-viewcontent" onclick="rmFile('g-viewcontent')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="g-card-addtocart">
+        <div class="ev-head" onclick="togEv('g','addtocart')">
+          <input type="checkbox" id="g-cb-addtocart" onclick="event.stopPropagation();togEvCb('g','addtocart',this.checked)">
+          <span class="ev-name">加入購物車</span><span class="ev-tag">Conversion</span>
+        </div>
+        <div class="ev-body" id="g-body-addtocart">
+          <div><div class="param-label">Conversion Label</div>
+            <input class="inline-input gl-input" type="text" placeholder="例如：AbCdEfGhIjKlMn">
+          </div>
+          <div><div class="param-label">觸發方式</div>
+            <div class="trigger-row"><span class="trig on" data-t="page" onclick="setTrig(this)">頁面載入</span><span class="trig" data-t="btn" onclick="setTrig(this)">按鈕點擊</span></div>
+          </div>
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="transaction_id">transaction_id</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'g-addtocart')"></div>
+            <div class="pv-row"><img id="pi-g-addtocart"><span class="fn" id="fn-g-addtocart"></span><button class="rm" id="rm-g-addtocart" onclick="rmFile('g-addtocart')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="g-card-checkout">
+        <div class="ev-head" onclick="togEv('g','checkout')">
+          <input type="checkbox" id="g-cb-checkout" onclick="event.stopPropagation();togEvCb('g','checkout',this.checked)">
+          <span class="ev-name">開始結帳</span><span class="ev-tag">Conversion</span>
+        </div>
+        <div class="ev-body" id="g-body-checkout">
+          <div><div class="param-label">Conversion Label</div>
+            <input class="inline-input gl-input" type="text" placeholder="例如：AbCdEfGhIjKlMn">
+          </div>
+          <div><div class="param-label">觸發方式</div>
+            <div class="trigger-row"><span class="trig on" data-t="page" onclick="setTrig(this)">頁面載入</span><span class="trig" data-t="btn" onclick="setTrig(this)">按鈕點擊</span></div>
+          </div>
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="transaction_id">transaction_id</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'g-checkout')"></div>
+            <div class="pv-row"><img id="pi-g-checkout"><span class="fn" id="fn-g-checkout"></span><button class="rm" id="rm-g-checkout" onclick="rmFile('g-checkout')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="g-card-purchase">
+        <div class="ev-head" onclick="togEv('g','purchase')">
+          <input type="checkbox" id="g-cb-purchase" onclick="event.stopPropagation();togEvCb('g','purchase',this.checked)">
+          <span class="ev-name">購買完成</span><span class="ev-tag">Conversion</span>
+        </div>
+        <div class="ev-body" id="g-body-purchase">
+          <div><div class="param-label">Conversion Label</div>
+            <input class="inline-input gl-input" type="text" placeholder="例如：AbCdEfGhIjKlMn">
+          </div>
+          <div><div class="param-label">觸發方式</div>
+            <div class="trigger-row"><span class="trig on" data-t="page" onclick="setTrig(this)">頁面載入</span><span class="trig" data-t="btn" onclick="setTrig(this)">按鈕點擊</span></div>
+          </div>
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="transaction_id">transaction_id</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'g-purchase')"></div>
+            <div class="pv-row"><img id="pi-g-purchase"><span class="fn" id="fn-g-purchase"></span><button class="rm" id="rm-g-purchase" onclick="rmFile('g-purchase')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" id="g-card-lead">
+        <div class="ev-head" onclick="togEv('g','lead')">
+          <input type="checkbox" id="g-cb-lead" onclick="event.stopPropagation();togEvCb('g','lead',this.checked)">
+          <span class="ev-name">提交表單</span><span class="ev-tag">Conversion</span>
+        </div>
+        <div class="ev-body" id="g-body-lead">
+          <div><div class="param-label">Conversion Label</div>
+            <input class="inline-input gl-input" type="text" placeholder="例如：AbCdEfGhIjKlMn">
+          </div>
+          <div><div class="param-label">觸發方式</div>
+            <div class="trigger-row"><span class="trig on" data-t="page" onclick="setTrig(this)">頁面載入</span><span class="trig" data-t="btn" onclick="setTrig(this)">按鈕點擊</span></div>
+          </div>
+          <div><div class="param-label">動態參數</div>
+            <div class="chips">
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="value">value / currency</label>
+              <label class="chip" onclick="togChip(this)"><input type="checkbox" value="transaction_id">transaction_id</label>
+            </div>
+          </div>
+          <div><div class="param-label">埋設位置截圖（選填）</div>
+            <div class="upload-area"><input type="file" accept="image/*" onchange="onFile(this,'g-lead')"></div>
+            <div class="pv-row"><img id="pi-g-lead"><span class="fn" id="fn-g-lead"></span><button class="rm" id="rm-g-lead" onclick="rmFile('g-lead')">✕ 移除</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+<button class="gen-btn" id="genBtn" onclick="gen()">產出 Word 檔</button>
+<div class="status" id="st"></div>
+<footer>廣告轉換代碼產生器</footer>
+</div>
+
+<script>
+var imgs = {};
+
+function togPlat(p, force) {
+  var cb = document.getElementById('cb-plat-' + p);
+  var card = document.getElementById('pc-' + p);
+  if (force !== undefined) cb.checked = force; else cb.checked = !cb.checked;
+  card.classList.toggle('active', cb.checked);
+  document.getElementById('col-meta').style.display = document.getElementById('cb-plat-meta').checked ? '' : 'none';
+  document.getElementById('col-gads').style.display = document.getElementById('cb-plat-gads').checked ? '' : 'none';
+}
+
+function togEv(prefix, key) {
+  var cb = document.getElementById(prefix + '-cb-' + key);
+  var card = document.getElementById(prefix + '-card-' + key);
+  var body = document.getElementById(prefix + '-body-' + key);
+  cb.checked = !cb.checked;
+  card.classList.toggle('active', cb.checked);
+  if (body) body.classList.toggle('show', cb.checked);
+}
+function togEvCb(prefix, key, checked) {
+  var cb = document.getElementById(prefix + '-cb-' + key);
+  var card = document.getElementById(prefix + '-card-' + key);
+  var body = document.getElementById(prefix + '-body-' + key);
+  cb.checked = checked;
+  card.classList.toggle('active', cb.checked);
+  if (body) body.classList.toggle('show', cb.checked);
+}
+
+function togChip(el) {
+  var cb = el.querySelector('input');
+  cb.checked = !cb.checked;
+  el.classList.toggle('on', cb.checked);
+}
+
+function setTrig(el) {
+  var row = el.parentElement;
+  var opts = row.querySelectorAll('.trig');
+  for (var i = 0; i < opts.length; i++) opts[i].classList.remove('on');
+  el.classList.add('on');
+}
+
+function onFile(input, key) {
+  var f = input.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(e) {
+    imgs[key] = { dataUrl: e.target.result, type: f.type };
+    document.getElementById('pi-' + key).src = e.target.result;
+    document.getElementById('pi-' + key).style.display = 'block';
+    document.getElementById('fn-' + key).textContent = f.name;
+    document.getElementById('fn-' + key).style.display = 'block';
+    document.getElementById('rm-' + key).style.display = 'inline';
+  };
+  r.readAsDataURL(f);
+}
+function rmFile(key) {
+  delete imgs[key];
+  document.getElementById('pi-' + key).style.display = 'none';
+  document.getElementById('fn-' + key).style.display = 'none';
+  document.getElementById('rm-' + key).style.display = 'none';
+  var body = document.getElementById('pi-' + key).closest('.ev-body');
+  var fi = body.querySelector('input[type=file]'); if (fi) fi.value = '';
+}
+
+function getChips(bodyId) {
+  var body = document.getElementById(bodyId); if (!body) return [];
+  var arr = [], chips = body.querySelectorAll('.chip.on input');
+  for (var i = 0; i < chips.length; i++) arr.push(chips[i].value);
+  return arr;
+}
+function getTrig(bodyId) {
+  var body = document.getElementById(bodyId); if (!body) return 'page';
+  var on = body.querySelector('.trig.on');
+  return (on && on.getAttribute('data-t') === 'btn') ? 'btn' : 'page';
+}
+function getLabel(bodyId) {
+  var body = document.getElementById(bodyId); if (!body) return '';
+  var inp = body.querySelector('.gl-input'); return inp ? inp.value.trim() : '';
+}
+function st(msg, type) { var el = document.getElementById('st'); el.textContent = msg; el.className = 'status ' + (type || ''); }
+function toBytes(u) { return fetch(u).then(function(r) { return r.arrayBuffer(); }).then(function(b) { return new Uint8Array(b); }); }
+function imgType(u) { if (u.indexOf('image/png') !== -1) return 'png'; if (u.indexOf('image/gif') !== -1) return 'gif'; return 'jpg'; }
+
+function buildMetaCode(name, params) {
+  var hasV = params.indexOf('value') !== -1, hasI = params.indexOf('content_ids') !== -1, hasT = params.indexOf('content_type') !== -1;
+  if (!hasV && !hasI && !hasT) return ["  fbq('track', '" + name + "');"];
+  var l = ["  fbq('track', '" + name + "', {"]; if (hasV) { l.push("    value: 1,"); l.push("    currency: 'TWD',"); }
+  if (hasI) l.push("    content_ids: ['1'],"); if (hasT) l.push("    content_type: 'product',"); l.push("  });"); return l;
+}
+function buildGadsPage(cid, label, params) {
+  var hasV = params.indexOf('value') !== -1, hasT = params.indexOf('transaction_id') !== -1;
+  var l = ["  gtag('event', 'conversion', {", "    'send_to': '" + cid + "/" + label + "',"]; if (hasV) { l.push("    'value': 1.0,"); l.push("    'currency': 'TWD',"); }
+  if (hasT) l.push("    'transaction_id': '',"); l.push("  });"); return l;
+}
+function buildGadsBtn(cid, label, params) {
+  var hasV = params.indexOf('value') !== -1, hasT = params.indexOf('transaction_id') !== -1;
+  var l = ["function gtag_report_conversion(url) {", "  var callback = function () {", "    if (typeof(url) != 'undefined') { window.location = url; }", "  };", "  gtag('event', 'conversion', {", "    'send_to': '" + cid + "/" + label + "',"];
+  if (hasV) { l.push("    'value': 1.0,"); l.push("    'currency': 'TWD',"); } if (hasT) l.push("    'transaction_id': '',");
+  l.push("    'event_callback': callback"); l.push("  });"); l.push("  return false;"); l.push("}"); return l;
+}
+
+async function gen() {
+  var useMeta = document.getElementById('cb-plat-meta').checked;
+  var useGads = document.getElementById('cb-plat-gads').checked;
+  if (!useMeta && !useGads) { st('請至少選擇一個平台', 'err'); return; }
+  var pid = document.getElementById('pixelId').value.trim();
+  var cidRaw = document.getElementById('convId').value.trim(); var cid = cidRaw ? 'AW-' + cidRaw.replace(/^AW-/i, '') : '';
+  if (useMeta && !pid) { st('請填入 Meta Pixel ID', 'err'); return; }
+  if (useGads && !cid) { st('請填入 Google Ads Conversion ID', 'err'); return; }
+
+  var evts = ['pageview','viewcontent','addtocart','checkout','purchase','lead'];
+  var mSel = [], gSel = [];
+  if (useMeta) { for (var i = 0; i < evts.length; i++) { var cb = document.getElementById('m-cb-' + evts[i]); if (cb && cb.checked) mSel.push(evts[i]); } }
+  if (useGads) { for (var i = 0; i < evts.length; i++) { var cb = document.getElementById('g-cb-' + evts[i]); if (cb && cb.checked) gSel.push(evts[i]); } }
+  if (!mSel.length && !gSel.length) { st('請至少勾選一個事件', 'err'); return; }
+
+  var btn = document.getElementById('genBtn'); btn.disabled = true; btn.textContent = '⏳ 產出中...'; st('正在組合文件...', '');
+
+  try {
+    var D = docx, FONT = '微軟正黑體';
+    var bdr = { style: D.BorderStyle.SINGLE, size: 1, color: 'CCCCCC' }, cBdr = { top: bdr, bottom: bdr, left: bdr, right: bdr };
+    function h(t, pb) { return new D.Paragraph({ children: [new D.TextRun({ text: t, bold: true, size: 28, font: FONT, highlight: 'yellow' })], spacing: { before: 200, after: 120 }, pageBreakBefore: !!pb }); }
+    function p(t) { return new D.Paragraph({ children: [new D.TextRun({ text: t, size: 22, font: FONT })], spacing: { before: 60, after: 60 } }); }
+    function nt(t) { return new D.Paragraph({ children: [new D.TextRun({ text: t, size: 20, font: FONT, color: '888888', italics: true })], spacing: { before: 40, after: 40 } }); }
+    function sp() { return new D.Paragraph({ children: [new D.TextRun('')], spacing: { before: 60, after: 60 } }); }
+    function code(lines) { return new D.Table({ width: { size: 9360, type: D.WidthType.DXA }, columnWidths: [9360], rows: lines.map(function(ln) { return new D.TableRow({ children: [new D.TableCell({ borders: cBdr, width: { size: 9360, type: D.WidthType.DXA }, shading: { fill: 'FFFFFF', type: D.ShadingType.CLEAR }, margins: { top: 40, bottom: 40, left: 160, right: 160 }, children: [new D.Paragraph({ children: [new D.TextRun({ text: ln, size: 18, font: 'Courier New', color: '333333' })], spacing: { before: 0, after: 0 } })] })] }); }) }); }
+    async function addImg(ch, key) { if (imgs[key]) { try { var bytes = await toBytes(imgs[key].dataUrl); ch.push(new D.Paragraph({ children: [new D.ImageRun({ data: bytes, type: imgType(imgs[key].dataUrl), transformation: { width: 550, height: 290 } })], spacing: { before: 80, after: 80 } })); ch.push(sp()); } catch(e) { ch.push(nt('[圖片嵌入失敗]')); } } }
+
+    var labels = { viewcontent: '查看商品', addtocart: '加入購物車', checkout: '開始結帳', purchase: '購買完成', lead: '提交表單' };
+    var metaNames = { viewcontent: 'ViewContent', addtocart: 'AddToCart', checkout: 'InitiateCheckout', purchase: 'Purchase', lead: 'Lead' };
+    var gDescs = { viewcontent: '埋設於產品頁面。緊接在全域網站代碼後', addtocart: '用戶將商品加到購物車或購物籃（例如：點擊「加到購物車」按鈕）。緊接在全域網站代碼後', checkout: '埋設於開始結帳頁面（例如：「立即結帳」按鈕）。緊接在全域網站代碼後', purchase: '埋設於購買完成頁。緊接在全域網站代碼後', lead: '埋設於表單送出完成頁或送出按鈕事件。緊接在全域網站代碼後' };
+    var descs = { viewcontent: '埋設於產品頁面。緊接在基底程式碼後', addtocart: '用戶將商品加到購物車或購物籃（例如：點擊「加到購物車」按鈕）。緊接在基底程式碼後', checkout: '埋設於開始結帳頁面（例如：「立即結帳」按鈕）。緊接在基底程式碼後', purchase: '埋設於購買完成頁。緊接在基底程式碼後', lead: '埋設於表單送出完成頁或送出按鈕事件。緊接在基底程式碼後' };
+
+    var ch = [], pn = 0;
+
+    // Meta events
+    for (var i = 0; i < mSel.length; i++) {
+      var k = mSel[i]; var pb = pn > 0; pn++;
+      if (k === 'pageview') {
+        ch.push(h('Meta Pixel — 全站再行銷', pb));
+        ch.push(p('複製下方程式碼貼在網站 <head> 與 </head> 之間，追蹤所有頁面')); ch.push(sp());
+        ch.push(code(["<!-- Meta Pixel Code -->", "<script>", "!function(f,b,e,v,n,t,s)", "{if(f.fbq)return;n=f.fbq=function(){n.callMethod?", "n.callMethod.apply(n,arguments):n.queue.push(arguments)};", "if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';", "n.queue=[];t=b.createElement(e);t.async=!0;", "t.src=v;s=b.getElementsByTagName(e)[0];", "s.parentNode.insertBefore(t,s)}(window, document,'script',", "'https://connect.facebook.net/en_US/fbevents.js');", "fbq('init', '" + pid + "');", "fbq('track', 'PageView');", "<\/script>", "<noscript><img height=\"1\" width=\"1\" style=\"display:none\"", "src=\"https://www.facebook.com/tr?id=" + pid + "&ev=PageView&noscript=1\"", "/><\/noscript>", "<!-- End Meta Pixel Code -->"]));
+      } else {
+        var mParams = getChips('m-body-' + k);
+        ch.push(h('Meta Pixel — ' + labels[k], pb)); ch.push(p(descs[k])); ch.push(sp());
+        await addImg(ch, 'm-' + k);
+        ch.push(code(['<script>'].concat(buildMetaCode(metaNames[k], mParams)).concat(['<\/script>']))); ch.push(sp());
+        if (mParams.indexOf('value') !== -1) ch.push(nt('*value 請帶入訂單總金額（建議埋設）'));
+        if (mParams.indexOf('content_ids') !== -1) ch.push(nt("*content_ids 請帶入產品ID (ex. ['123','456'])（非必備）"));
+        if (mParams.indexOf('content_type') !== -1) ch.push(nt('*content_type 請帶入產品種類字串（非必備）'));
+      }
+    }
+
+    // Google Ads events
+    for (var i = 0; i < gSel.length; i++) {
+      var k = gSel[i]; var pb = pn > 0; pn++;
+      if (k === 'pageview') {
+        ch.push(h('Google Ads — 全站再行銷', pb));
+        ch.push(p('複製下方程式碼貼在網站 <head> 與 </head> 之間，此為 Google Ads 全域網站代碼')); ch.push(sp());
+        ch.push(code(["<!-- Google tag (gtag.js) -->", '<script async src="https://www.googletagmanager.com/gtag/js?id=' + cid + '"><\/script>', "<script>", "  window.dataLayer = window.dataLayer || [];", "  function gtag(){dataLayer.push(arguments);}", "  gtag('js', new Date());", "  gtag('config', '" + cid + "');", "<\/script>"]));
+      } else {
+        var gLabel = getLabel('g-body-' + k); var gTrig = getTrig('g-body-' + k); var gParams = getChips('g-body-' + k);
+        ch.push(h('Google Ads — ' + labels[k], pb));
+        if (gTrig === 'page') { ch.push(p(gDescs[k])); }
+        else { ch.push(p(gDescs[k] + '（透過按鈕點擊觸發）')); }
+        ch.push(sp());
+        await addImg(ch, 'g-' + k);
+        if (gTrig === 'page') { ch.push(code(['<script>'].concat(buildGadsPage(cid, gLabel, gParams)).concat(['<\/script>']))); }
+        else { ch.push(code(['<script>'].concat(buildGadsBtn(cid, gLabel, gParams)).concat(['<\/script>']))); ch.push(sp()); ch.push(nt("*請在按鈕加上：onclick=\"return gtag_report_conversion('目標網址')\"")); }
+        ch.push(sp());
+        if (gParams.indexOf('value') !== -1) ch.push(nt('*value 請帶入轉換金額（建議埋設）'));
+        if (gParams.indexOf('transaction_id') !== -1) ch.push(nt('*transaction_id 請帶入訂單編號（防止重複計算）'));
+        if (!gLabel) ch.push(nt('⚠ 未填入 Conversion Label，請確認是否正確'));
+      }
+    }
+
+    var doc = new D.Document({ sections: [{ properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children: ch }] });
+    var blob = await D.Packer.toBlob(doc); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = 'Conversion_Code_' + Date.now() + '.docx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    st('✓ Word 檔已下載完成！', 'ok');
+  } catch(e) { st('產出失敗：' + e.message, 'err'); console.error(e); }
+  btn.disabled = false; btn.textContent = '產出 Word 檔';
+}
+</script>
+</body>
+</html>
